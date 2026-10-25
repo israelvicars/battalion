@@ -1,8 +1,8 @@
-# Flotilla
+# Battalion
 
 **Auto Router, but for all your agent accounts.**
 
-Flotilla is a personal, local-first agent mesh for one owner. You already have several coding agents and assistants, each with its own login, tools, and limits, and today you are the one copying context between them. Flotilla puts a captain in charge: your orchestrator sends a task to the right crew member, or to several at once, and shows you where they agree and where they disagree. Every hand-off goes through a local broker. Scopes decide what an agent can see before it runs, risky steps wait for your approval, secrets are redacted, and each decision is written to a hash-chained audit log you can verify. It runs on your own machine for one person. It is not a team cloud product.
+Battalion is a personal, local-first agent mesh for one owner. You already have several coding agents and assistants, each with its own login, tools, and limits, and today you are the one copying context between them. Battalion puts a captain in charge: your orchestrator sends a task to the right crew member, or to several at once, and shows you where they agree and where they disagree. Every hand-off goes through a local broker. Scopes decide what an agent can see before it runs, risky steps wait for your approval, secrets are redacted, and each decision is written to a hash-chained audit log you can verify. It runs on your own machine for one person. It is not a team cloud product.
 
 ## Status
 
@@ -19,7 +19,7 @@ Early prototype, not yet released. There is no code in this repository yet. The 
 
 ## Theme
 
-Flotilla's look and voice borrow from anime pirate and navy adventure: wanted-poster crew cards, nautical charts, logbooks, and approval stamps. The design is original and uses only generic pirate and navy vocabulary. It is not affiliated with, or endorsed by, any show, studio, or publisher.
+Battalion's look and voice borrow from anime pirate and navy adventure: wanted-poster crew cards, nautical charts, logbooks, and approval stamps. The design is original and uses only generic pirate and navy vocabulary. It is not affiliated with, or endorsed by, any show, studio, or publisher.
 
 ## License
 
