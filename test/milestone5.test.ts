@@ -223,7 +223,13 @@ test("M5.1 UI binds loopback, gates sessions, rejects bad Host, and serves only 
   assert.equal(page.headers["referrer-policy"], "no-referrer");
   assert.match(page.headers["content-security-policy"] ?? "", /default-src 'self'/);
   assert.match(page.headers["content-security-policy"] ?? "", /frame-ancestors 'none'/);
+  assert.match(page.headers["content-security-policy"] ?? "", /font-src 'self'/);
   assert(!/https?:\/\//.test(page.body));
+
+  const font = await request(ui.port, "/fonts/InterVariable-latin.woff2", { headers: { Cookie: cookie } });
+  assert.equal(font.status, 200);
+  assert.equal(font.headers["content-type"], "font/woff2");
+  assert.equal((await request(ui.port, "/fonts/x.woff2", { headers: { Cookie: cookie } })).status, 404);
 });
 
 test("M5.2 every view and JSON endpoint renders, while untrusted agent text stays plain and escaped", async (t) => {
@@ -262,6 +268,7 @@ test("M5.2 every view and JSON endpoint renders, while untrusted agent text stay
   }
 
   const threadPage = await request(ui.port, "/threads/ui-thread", { headers });
+  assert.match(threadPage.body, /X marks the spot/);
   assert.match(threadPage.body, /untrusted agent output/);
   assert.match(threadPage.body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(threadPage.body, /&quot;&gt;&lt;img src=x onerror=alert\(1\)&gt;/);
@@ -278,6 +285,9 @@ test("M5.2 every view and JSON endpoint renders, while untrusted agent text stay
     { messages: Array<{ text: string; untrusted: boolean }> };
   assert.equal(threadJson.messages[0].text, hostile);
   assert.equal(threadJson.messages[0].untrusted, true);
+  const agentsPage = await request(ui.port, "/agents", { headers });
+  assert.match(agentsPage.body, /<details>/);
+  assert.match(agentsPage.body, /<summary>Manifest<\/summary>/);
 });
 
 test("M5.3 approval and kill actions are POST-only, enforce CSRF and Origin, and reuse audited core behavior", async (t) => {

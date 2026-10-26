@@ -28,6 +28,12 @@ await mkdir(screenshots, { recursive: true });
 
 function runCli(args) { return new Promise((resolve, reject) => { const child = spawn(process.execPath, [path.join(repo, "bin/battalion"), ...args, "--json"], { cwd: repo, env }); let stdout = ""; let stderr = ""; child.stdout.on("data", (chunk) => { stdout += chunk; }); child.stderr.on("data", (chunk) => { stderr += chunk; }); child.once("error", reject); child.once("exit", (code) => resolve({ code: code ?? 1, stdout, stderr })); }); }
 async function jsonCli(args) { const result = await runCli(args); if (result.code !== 0) throw new Error(`${args.join(" ")} failed: ${result.stderr}`); return JSON.parse(result.stdout); }
+async function shot(page, filename, fullPage = false) {
+  await page.evaluate(() => document.fonts.ready);
+  const loaded = await page.evaluate(() => [...document.fonts].filter((font) => font.status === "loaded").map((font) => font.family.replaceAll('"', "")));
+  process.stdout.write(`${filename}: fonts loaded ${[...new Set(loaded)].join(", ") || "none"}\n`);
+  await page.screenshot({ path: path.join(screenshots, filename), fullPage });
+}
 async function screenshotChrome(url, filename) { const chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"; return new Promise((resolve, reject) => { const child = spawn(chrome, ["--headless=new", "--disable-gpu", "--hide-scrollbars", "--window-size=1280,900", `--screenshot=${path.join(screenshots, filename)}`, url], { stdio: "ignore" }); child.once("error", reject); child.once("exit", (code) => code === 0 ? resolve() : reject(new Error(`Chrome exited ${code}`))); }); }
 function csrf(html) { const match = /<meta name="ttb-csrf" content="([^"]+)">/.exec(html); if (!match) throw new Error("CSRF token missing"); return match[1]; }
 async function approveOverHttp(ui, tokenUrl, approvalId) { const exchanged = await fetch(tokenUrl, { redirect: "manual" }); const cookie = exchanged.headers.get("set-cookie")?.split(";", 1)[0]; if (!cookie) throw new Error("session cookie missing"); const base = new URL(tokenUrl); const page = await fetch(new URL("/approvals", base), { headers: { cookie } }); const token = csrf(await page.text()); const response = await fetch(new URL(`/api/approvals/${encodeURIComponent(approvalId)}/approve`, base), { method: "POST", headers: { cookie, origin: base.origin, "x-ttb-csrf": token } }); if (!response.ok) throw new Error(`approval failed: ${response.status}`); }
@@ -51,11 +57,11 @@ try {
   process.stdout.write(`Browser path: ${browserPath}\n`);
   if (browser) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 1 });
-    await page.goto(ui.url); await page.screenshot({ path: path.join(screenshots, "01-crew.png") });
-    await page.goto(`${baseUrl}/threads/demo-voyage`); await page.screenshot({ path: path.join(screenshots, "02-voyage-pending.png") });
-    await page.goto(`${baseUrl}/approvals`); await page.screenshot({ path: path.join(screenshots, "03-approvals.png") });
-    await page.getByRole("button", { name: "APPROVED" }).click(); await page.waitForTimeout(2500); await page.goto(`${baseUrl}/threads/demo-voyage`); await page.screenshot({ path: path.join(screenshots, "04-voyage-complete.png") });
-    await page.goto(`${baseUrl}/audit`); await page.screenshot({ path: path.join(screenshots, "05-logbook.png") }); await browser.close();
+    await page.goto(ui.url); await shot(page, "01-crew.png");
+    await page.goto(`${baseUrl}/threads/demo-voyage`); await shot(page, "02-voyage-pending.png");
+    await page.goto(`${baseUrl}/approvals`); await shot(page, "03-approvals.png");
+    await page.getByRole("button", { name: "APPROVED" }).click(); await page.waitForTimeout(2500); await page.goto(`${baseUrl}/threads/demo-voyage`); await shot(page, "04-voyage-complete.png", true);
+    await page.goto(`${baseUrl}/audit`); await shot(page, "05-logbook.png"); await browser.close();
   } else {
     await screenshotChrome(sessionUrl("/agents"), "01-crew.png"); await screenshotChrome(sessionUrl("/threads/demo-voyage"), "02-voyage-pending.png"); await screenshotChrome(sessionUrl("/approvals"), "03-approvals.png"); await approveOverHttp(ui, ui.url, approval); await new Promise((resolve) => setTimeout(resolve, 2500)); await screenshotChrome(sessionUrl("/threads/demo-voyage"), "04-voyage-complete.png"); await screenshotChrome(sessionUrl("/audit"), "05-logbook.png");
   }
