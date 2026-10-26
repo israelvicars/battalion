@@ -1,6 +1,6 @@
 {
   "name": "battalion",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Battalion: a personal, local-first agent mesh with a broker (prototype, paused Oct 2026)",
   "license": "Apache-2.0",

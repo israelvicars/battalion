@@ -1,5 +1,7 @@
 # Battalion
 
+**Auto Router, but for all your agent accounts.**
+
 Battalion is a personal, single-owner, local-first agent mesh with one broker.
 It scopes tasks, gates risky work for approval, redacts secrets, records a
 hash-chained audit log, and treats disagreement as a first-class output through
@@ -7,10 +9,28 @@ fanout, compare, and tally. It includes adapters for Codex CLI, Cursor CLI
 (approval-gated in a throwaway copy), restricted Claude Code, and a vault-drop
 mailbox spoke. The web UI is loopback-only.
 
-**Status: Prototype, paused Oct 2026.**
+**Status: Prototype, paused Oct 2026.** Published as a portfolio piece; not
+under active development.
+
+![Crew](docs/screenshots/01-crew.png)
+
+## Why
+
+Running several coding agents means copy-pasting context between them by hand:
+the human is the relay. Battalion puts one orchestrating agent in front of the
+rest and one broker underneath it, so a task is handed off, not retyped.
+
+The broker does three jobs:
+
+- **Route** — pick the agent by what it can reach, and by access and quota.
+- **Gate** — check scope and a denylist before the model sees anything,
+  redact secrets from output, and hold risky work for approval.
+- **Audit** — record every decision in an append-only, hash-chained log, and
+  keep disagreements between agents as a first-class output.
 
 There are no runtime or development dependencies. Node >=22.18 runs the
-TypeScript directly.
+TypeScript directly. `npm test` runs 47 tests against local mocks; no real
+agent, network, or vault is touched.
 
 ## Quickstart
 
@@ -42,6 +62,18 @@ The UI demo writes these five local screenshots:
 ![Approvals](docs/screenshots/03-approvals.png)
 ![Voyage complete](docs/screenshots/04-voyage-complete.png)
 ![Logbook](docs/screenshots/05-logbook.png)
+
+## How it fits together
+
+- **Hub** — one broker: envelope validation, scope resolution, approvals,
+  audit chain, threads, and the per-task lead lock.
+- **Adapters** — one per agent: Codex, Cursor, Claude Code, and a vault-drop
+  mailbox spoke for agents reachable only by file drop.
+- **CLI** — `battalion` drives the hub: send, fanout, compare, tally,
+  approvals, audit verify.
+- **Web UI** — loopback-only dashboard with crew cards, voyages, approvals,
+  and the logbook. Session token, CSRF protection, strict CSP, no external
+  assets.
 
 ## CLI reference
 

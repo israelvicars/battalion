@@ -88,7 +88,19 @@ async function waitForFile(filename: string): Promise<void> {
   throw new Error(`Timed out waiting for ${filename}`);
 }
 
-function assertProcessGroupGone(pid: number): void {
+async function assertProcessGroupGone(pid: number): Promise<void> {
+  // The child may still be a zombie awaiting reap when the adapter reports
+  // the run finished, so poll briefly instead of asserting immediately.
+  const deadline = Date.now() + 1_000;
+  while (Date.now() < deadline) {
+    try {
+      process.kill(-pid, 0);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ESRCH") return;
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
   assert.throws(
     () => process.kill(-pid, 0),
     (error: NodeJS.ErrnoException) => error.code === "ESRCH",
