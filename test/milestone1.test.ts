@@ -7,6 +7,7 @@ import { CodexAdapter } from "../src/adapters/codex.ts";
 import type { NormalizedEvent } from "../src/adapters/types.ts";
 import { AuditLog, verifyAudit } from "../src/core/audit.ts";
 import { Broker } from "../src/core/broker.ts";
+import { groupHasLiveMember } from "../src/adapters/process-group.ts";
 import { validateEnvelope } from "../src/core/envelope.ts";
 import type { Envelope } from "../src/core/envelope.ts";
 import { resolveScope } from "../src/core/scope.ts";
@@ -89,22 +90,14 @@ async function waitForFile(filename: string): Promise<void> {
 }
 
 async function assertProcessGroupGone(pid: number): Promise<void> {
-  // The child may still be a zombie awaiting reap when the adapter reports
-  // the run finished, so poll briefly instead of asserting immediately.
-  const deadline = Date.now() + 1_000;
+  // The hang fixture spawns a grandchild that ignores SIGTERM, so the group
+  // only disappears once the OS reaps it; allow a generous window.
+  const deadline = Date.now() + 5_000;
   while (Date.now() < deadline) {
-    try {
-      process.kill(-pid, 0);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ESRCH") return;
-      throw error;
-    }
+    if (!(await groupHasLiveMember(pid))) return;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
-  assert.throws(
-    () => process.kill(-pid, 0),
-    (error: NodeJS.ErrnoException) => error.code === "ESRCH",
-  );
+  assert.fail(`process group ${pid} still has a live member`);
 }
 
 test("1. envelope validation rejects excessive hops, spend, and unknown fields", () => {

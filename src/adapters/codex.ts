@@ -5,6 +5,7 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { Envelope } from "../core/envelope.ts";
 import { buildChildEnv } from "../core/env.ts";
 import { Redactor } from "../core/redaction.ts";
+import { groupHasLiveMember } from "./process-group.ts";
 import type {
   Adapter,
   AdapterManifest,
@@ -284,7 +285,7 @@ export class CodexAdapter implements Adapter {
     const run = this.requireRun(runId);
     if (!run.closed) this.terminate(run, "cancelled");
     await run.completion;
-    return { stopped: !this.groupExists(run.child.pid) };
+    return { stopped: !(await groupHasLiveMember(run.child.pid)) };
   }
 
   async usage(): Promise<AdapterUsage> {
@@ -416,16 +417,6 @@ export class CodexAdapter implements Adapter {
       else child.kill(signal);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ESRCH") child.kill(signal);
-    }
-  }
-
-  private groupExists(pid: number | undefined): boolean {
-    if (!pid) return false;
-    try {
-      process.kill(process.platform === "win32" ? pid : -pid, 0);
-      return true;
-    } catch (error) {
-      return (error as NodeJS.ErrnoException).code !== "ESRCH";
     }
   }
 }

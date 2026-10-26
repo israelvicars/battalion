@@ -5,6 +5,7 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { Envelope } from "../core/envelope.ts";
 import { buildChildEnv } from "../core/env.ts";
 import { Redactor } from "../core/redaction.ts";
+import { groupHasLiveMember } from "./process-group.ts";
 import type {
   Adapter,
   AdapterManifest,
@@ -198,7 +199,7 @@ export class ClaudeAdapter implements Adapter {
     const run = this.requireRun(runId);
     if (!run.closed) this.terminate(run, "cancelled");
     await run.completion;
-    return { stopped: !this.groupExists(run.child.pid) };
+    return { stopped: !(await groupHasLiveMember(run.child.pid)) };
   }
   async usage(): Promise<AdapterUsage> { return { cost_usd: this.observedCostUsd, quota: "unknown" }; }
   redactionHits(runId: string): number { return this.requireRun(runId).redactionHits; }
@@ -330,12 +331,6 @@ export class ClaudeAdapter implements Adapter {
       if ((error as NodeJS.ErrnoException).code !== "ESRCH") child.kill(signal);
     }
   }
-  private groupExists(pid: number | undefined): boolean {
-    if (!pid) return false;
-    try { process.kill(process.platform === "win32" ? pid : -pid, 0); return true; }
-    catch (error) { return (error as NodeJS.ErrnoException).code !== "ESRCH"; }
-  }
-
   private capture(args: string[]): Promise<string> {
     return new Promise((resolve) => {
       const child = spawn(this.binary, args, { env: buildChildEnv(process.env, this.additions), stdio: ["ignore", "pipe", "pipe"] });

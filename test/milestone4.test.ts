@@ -17,6 +17,7 @@ import test from "node:test";
 import { ClaudeAdapter } from "../src/adapters/claude.ts";
 import { CodexAdapter } from "../src/adapters/codex.ts";
 import { CursorAdapter } from "../src/adapters/cursor.ts";
+import { groupHasLiveMember } from "../src/adapters/process-group.ts";
 import type { Adapter, NormalizedEvent } from "../src/adapters/types.ts";
 import { ApprovalStore } from "../src/core/approvals.ts";
 import { AuditLog, verifyAudit } from "../src/core/audit.ts";
@@ -85,11 +86,15 @@ async function waitForFile(filename: string, timeoutMs = 2_000): Promise<void> {
   throw new Error(`Timed out waiting for ${filename}`);
 }
 
-function assertGroupGone(pid: number): void {
-  assert.throws(
-    () => process.kill(process.platform === "win32" ? pid : -pid, 0),
-    (error: NodeJS.ErrnoException) => error.code === "ESRCH",
-  );
+async function assertGroupGone(pid: number): Promise<void> {
+  // The hang fixture spawns a grandchild that ignores SIGTERM, so the group
+  // only disappears once the OS reaps it; allow a generous window.
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    if (!(await groupHasLiveMember(pid))) return;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.fail(`process group ${pid} still has a live member`);
 }
 
 test("M4.1 configured peer roots and TTB_VAULT can narrow but never widen, with audited failure", async (t) => {
@@ -317,7 +322,7 @@ test("M4.6 Cursor and Claude cancel their process groups", async (t) => {
     const events = await eventsPromise;
     assert.deepEqual(events.slice(-2).map((event) => event.type), ["error", "finished"]);
     assert.equal((events.at(-2) as { reason: string }).reason, "cancelled");
-    assertGroupGone(Number(await readFile(pidFile, "utf8")));
+    await assertGroupGone(Number(await readFile(pidFile, "utf8")));
   }
 });
 
