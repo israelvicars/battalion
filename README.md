@@ -122,23 +122,3 @@ instructions. Writes, network work, and higher-risk spokes require approval.
 The UI keeps its existing session token, CSRF protection, escaping, strict CSP,
 two-second live refresh, and loopback binding. It has no CDN, external fonts,
 analytics, or remote assets.
-
-## Known limits / open items
-
-- No launchd service.
-- The real vault mailbox is not wired.
-- The Claude adapter has not been tested live.
-- Cursor authentication works only from the owner's own Terminal session; its
-  CLI keychain login is not visible to app-spawned shells.
-- The `ttb` alias and `~/.ttb` data directory are kept for compatibility.
-- Cursor's final-answer heuristic uses text after the last tool call.
-
-## Theme
-
-The look borrows from generic pirate and navy adventure: crew cards, nautical
-charts, logbooks, and approval stamps. The design is original and is not
-affiliated with, or endorsed by, any show, studio, or publisher.
-
-## License
-
-Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
