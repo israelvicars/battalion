@@ -1,0 +1,20 @@
+{
+  "name": "battalion",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Battalion: a personal, local-first agent mesh with a broker (prototype, paused Oct 2026)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": {
+    "battalion": "./bin/battalion",
+    "ttb": "./bin/ttb"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.ts",
+    "demo:cli": "node scripts/demo-cli.mjs",
+    "demo:ui": "node scripts/demo-ui.mjs"
+  }
+}

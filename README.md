@@ -1,25 +1,111 @@
 # Battalion
 
-**Auto Router, but for all your agent accounts.**
+Battalion is a personal, single-owner, local-first agent mesh with one broker.
+It scopes tasks, gates risky work for approval, redacts secrets, records a
+hash-chained audit log, and treats disagreement as a first-class output through
+fanout, compare, and tally. It includes adapters for Codex CLI, Cursor CLI
+(approval-gated in a throwaway copy), restricted Claude Code, and a vault-drop
+mailbox spoke. The web UI is loopback-only.
 
-Battalion is a personal, local-first agent mesh for one owner. You already have several coding agents and assistants, each with its own login, tools, and limits, and today you are the one copying context between them. Battalion puts a captain in charge: your orchestrator sends a task to the right crew member, or to several at once, and shows you where they agree and where they disagree. Every hand-off goes through a local broker. Scopes decide what an agent can see before it runs, risky steps wait for your approval, secrets are redacted, and each decision is written to a hash-chained audit log you can verify. It runs on your own machine for one person. It is not a team cloud product.
+**Status: Prototype, paused Oct 2026.**
 
-## Status
+There are no runtime or development dependencies. Node >=22.18 runs the
+TypeScript directly.
 
-Early prototype, not yet released. There is no code in this repository yet. The prototype is being built and tested privately, and it will land here once it passes real-agent tests.
+## Quickstart
 
-## How it works (planned)
+```sh
+npm test
+./bin/battalion agents
+./bin/battalion ui
+```
 
-- **Crew:** each agent account you connect (coding CLIs, app assistants, local models) gets a card with its name, role, and status.
-- **Captain:** the orchestrator you choose. On each task, one agent leads as the **flagship**, so two orchestrators never steer the same task.
-- **Voyage:** a task, with a scope that says which files and folders it may touch.
-- **Stamps:** the broker's decisions. APPROVED, DENIED, or HELD FOR REVIEW, with the reason logged.
-- **Logbook:** the audit log. Dated, hash-chained entries, checked with one command.
-- **Disagreement:** when you ask several agents, the result is a comparison, not a blend. You see the split and decide.
+The compatibility command remains available:
+
+```sh
+./bin/ttb agents --json
+```
+
+## Offline demos
+
+```sh
+npm run demo:cli
+npm run demo:cli -- --real
+npm run demo:ui
+```
+
+The default CLI demo uses only local mock binaries and temporary directories.
+The UI demo writes these five local screenshots:
+
+![Crew](docs/screenshots/01-crew.png)
+![Voyage pending](docs/screenshots/02-voyage-pending.png)
+![Approvals](docs/screenshots/03-approvals.png)
+![Voyage complete](docs/screenshots/04-voyage-complete.png)
+![Logbook](docs/screenshots/05-logbook.png)
+
+## CLI reference
+
+```text
+battalion agents [--json]
+battalion profile <agent> [--json]
+battalion send @<agent> "<prompt>" [--scope <absolute-path>] [--thread <id>] [--json]
+battalion fanout @a @b "<prompt>" [--scope <absolute-path>] [--thread <id>] [--json]
+battalion compare <thread> --agree "<text>" --disagree "<text>" [--changed-decision yes|no] [--json]
+battalion tally [--json]
+battalion threads [--json]
+battalion thread <id> [--json]
+battalion approvals [--json]
+battalion approve <id> [--json]
+battalion deny <id> [--json]
+battalion audit verify [--json]
+battalion kill --all [--json]
+battalion kill <run-id> [--json]
+battalion poll [--json]
+battalion serve [--json]
+battalion ui [--port N] [--host 127.0.0.1] [--json]
+```
+
+Exit codes: `0` success, `1` internal error, `2` usage error, `3` not found,
+`4` conflict/lock, `5` worker failure, and `6` invalid audit chain.
+
+## Storage and safety
+
+The data directory remains `$HOME/.ttb` by default. `BATTALION_HOME` may be
+used as a preferred alias; `TTB_HOME` remains supported for compatibility.
+Other stable `TTB_*` variables are intentionally unchanged, including
+`TTB_CODEX_BIN`, `TTB_CURSOR_BIN`, `TTB_CLAUDE_BIN`, `TTB_MUSE_MAILBOX`,
+`TTB_SCOPE_ROOTS`, and `TTB_VAULT`.
+
+Tasks that arrive from the mailbox spoke, or with `hops > 0`, are limited to
+`$HOME/Projects` and `$HOME/Agents` by default (both must exist). `TTB_VAULT`
+can narrow the second root to one folder, for example `$HOME/Agents/my-vault`.
+The mailbox defaults to `$HOME/Agents/inbox/ttb/muse/`; set `TTB_MUSE_MAILBOX`
+to use another folder.
+
+Every task is checked against scope and the denylist before an adapter starts.
+Child processes receive an allowlisted environment, adapter output is redacted,
+and audit entries form an append-only hash chain. Worker output is data, never
+instructions. Writes, network work, and higher-risk spokes require approval.
+
+The UI keeps its existing session token, CSRF protection, escaping, strict CSP,
+two-second live refresh, and loopback binding. It has no CDN, external fonts,
+analytics, or remote assets.
+
+## Known limits / open items
+
+- No launchd service.
+- The real vault mailbox is not wired.
+- The Claude adapter has not been tested live.
+- Cursor authentication works only from the owner's own Terminal session; its
+  CLI keychain login is not visible to app-spawned shells.
+- The `ttb` alias and `~/.ttb` data directory are kept for compatibility.
+- Cursor's final-answer heuristic uses text after the last tool call.
 
 ## Theme
 
-Battalion's look and voice borrow from anime pirate and navy adventure: wanted-poster crew cards, nautical charts, logbooks, and approval stamps. The design is original and uses only generic pirate and navy vocabulary. It is not affiliated with, or endorsed by, any show, studio, or publisher.
+The look borrows from generic pirate and navy adventure: crew cards, nautical
+charts, logbooks, and approval stamps. The design is original and is not
+affiliated with, or endorsed by, any show, studio, or publisher.
 
 ## License
 
